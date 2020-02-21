@@ -102,7 +102,8 @@ def load_seg_model(model_folder, gpu_id=0):
     # load voxel head network module
     voxel_net_state = torch.load(voxel_net_chk_file)
     voxel_net = net_module.VoxelHead(
-      voxel_net_state['in_fine_channels'], voxel_net_state['in_coarse_channels'], voxel_net_state['out_channels']
+      voxel_net_state['in_fine_channels'], voxel_net_state['in_coarse_channels'], voxel_net_state['out_channels'],
+      voxel_net_state['num_fc']
     )
     voxel_net = nn.parallel.DataParallel(voxel_net)
     voxel_net.load_state_dict(voxel_net_state['state_dict'])
@@ -377,11 +378,11 @@ def main():
                        '2. A text file containing paths of all testing images\n'\
                        '3. A folder containing all testing images\n'
 
-    default_input = '/home/qinliu/debug/test.txt'
-    default_model = '/home/qinliu/debug/models/model_0218_2020/experimentB/model3'
-    default_output = '/home/qinliu/debug/results/model_0218_2020'
+    default_input = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/test.txt'
+    default_model = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0220_2020/model1'
+    default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/model_0220_2020/model1'
     default_seg_name = 'result.mha'
-    default_gpu_id = -1
+    default_gpu_id = 4
 
     parser = argparse.ArgumentParser(description=long_description)
     parser.add_argument('-i', '--input', default=default_input, help='input folder/file for intensity images')

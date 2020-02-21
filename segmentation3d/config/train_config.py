@@ -13,16 +13,16 @@ cfg = __C
 __C.general = {}
 
 # image-segmentation pair list
-__C.general.imseg_list = '/home/qinliu/debug/train.txt'
+__C.general.imseg_list = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/train.txt'
 
 # the output of training models and logs
-__C.general.save_dir = '/home/qinliu/debug/models/model_0218_2020/experimentB/model3'
+__C.general.save_dir = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0220_2020/model1'
 
 # continue training from certain epoch, -1 to train from scratch
 __C.general.resume_epoch = -1
 
 # the number of GPUs used in training. Set to 0 if using cpu only.
-__C.general.num_gpus = 0
+__C.general.num_gpus = 1
 
 # random seed used in training (debugging purpose)
 __C.general.seed = 0
@@ -38,20 +38,20 @@ __C.dataset = {}
 __C.dataset.num_classes = 3
 
 # the resolution on which segmentation is performed
-__C.dataset.spacing = [2.0, 2.0, 2.0]
+__C.dataset.spacing = [0.8, 0.8, 0.8]
 
 # the sampling crop size, e.g., determine the context information
-__C.dataset.crop_size = [32, 32, 32]
+__C.dataset.crop_size = [128, 128, 128]
 
 # sampling method:
 # 1) GLOBAL: sampling crops randomly in the entire image domain
 # 2) MASK: sampling crops randomly within segmentation mask
 # 3) HYBRID: Sampling crops randomly with both GLOBAL and MASK methods
 # 4) CENTER: sampling crops in the image center
-__C.dataset.sampling_method = 'GLOBAL'
+__C.dataset.sampling_method = 'HYBRID'
 
 # translation augmentation (unit: mm)
-__C.dataset.random_translation = [5, 5, 5]
+__C.dataset.random_translation = [64, 64, 5]
 
 # linear interpolation method:
 # 1) NN: nearest neighbor interpolation
@@ -89,13 +89,13 @@ __C.loss.focal_gamma = 2
 __C.voxel_head = {}
 
 # the number voxels for voxel head network
-__C.voxel_head.num_voxels = 5120
+__C.voxel_head.num_voxels = 32768 
 
 # oversample ratio
 __C.voxel_head.oversample_ratio = 3
 
 # importance sample ratio
-__C.voxel_head.importance_sample_ratio = 0
+__C.voxel_head.importance_sample_ratio = 0.75
 
 # number of fully-connected layers
 __C.voxel_head.num_fc = 3
@@ -111,7 +111,7 @@ __C.voxel_head.loss_focal_gamma = 2
 __C.voxel_head.loss_obj_weight = [1/3, 1/3, 1/3]
 
 # loss weight
-__C.voxel_head.loss_weight = 1.0
+__C.voxel_head.loss_weight = 0.0
 
 ##################################
 # net
@@ -132,13 +132,13 @@ __C.net.dropout_turn_on = False
 __C.train = {}
 
 # the number of training epochs
-__C.train.epochs = 5001
+__C.train.epochs = 2001
 
 # the number of samples in a batch
-__C.train.batchsize = 1
+__C.train.batchsize = 4
 
 # the number of threads for IO
-__C.train.num_threads = 1
+__C.train.num_threads = 4
 
 # the learning rate
 __C.train.lr = 1e-4

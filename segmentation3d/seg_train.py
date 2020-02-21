@@ -72,6 +72,15 @@ def train(config_file):
     )
     net_module.parameters_kaiming_init(voxel_net)
 
+    # get voxel_net parameters
+    voxel_net_params = {}
+    voxel_net_params['name'] = 'voxel_net'
+    voxel_net_params['in_channels'] = voxel_net.in_channels
+    voxel_net_params['in_coarse_channels'] = voxel_net.in_coarse_channels
+    voxel_net_params['in_fine_channels'] = voxel_net.in_fine_channels
+    voxel_net_params['out_channels'] = voxel_net.out_channels
+    voxel_net_params['num_fc'] = voxel_net.num_fc
+
     if cfg.general.num_gpus > 0:
         net = nn.parallel.DataParallel(net, device_ids=list(range(cfg.general.num_gpus)))
         net = net.cuda()
@@ -182,7 +191,7 @@ def train(config_file):
         if epoch_idx != 0 and (epoch_idx % cfg.train.save_epochs == 0):
             if last_save_epoch != epoch_idx:
                 save_checkpoint(
-                    net, voxel_net, opt, epoch_idx, batch_idx, cfg, config_file, max_stride, dataset.num_modality()
+                    net, voxel_net, voxel_net_params, opt, epoch_idx, batch_idx, cfg, config_file, max_stride, dataset.num_modality()
                 )
                 last_save_epoch = epoch_idx
 
@@ -193,7 +202,7 @@ def train(config_file):
 
 def main():
 
-    os.environ['CUDA_VISIBLE_DEVICES'] = '1,2,3,5,6,7'
+    os.environ['CUDA_VISIBLE_DEVICES'] = '4'
 
     long_description = "Training engine for 3d medical image segmentation"
     parser = argparse.ArgumentParser(description=long_description)

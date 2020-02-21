@@ -67,10 +67,12 @@ def load_checkpoint(epoch_idx, net, opt, save_dir, gpu_id=0):
     return state['epoch'], state['batch']
 
 
-def save_checkpoint(mask_net, voxel_net, opt, epoch_idx, batch_idx, cfg, config_file, max_stride, num_modality):
+def save_checkpoint(mask_net, voxel_net, voxel_net_params, opt, epoch_idx, batch_idx, cfg, config_file, max_stride, num_modality):
   """ save model and parameters into a checkpoint file (.pth)
 
-  :param mask_net: the network object
+  :param mask_net: the mask head network object
+  :param voxel_net: the voxel head network object
+  :param voxel_net_params: the basic parameters of voxel net
   :param opt: the optimizer object
   :param epoch_idx: the epoch index
   :param batch_idx: the batch index
@@ -99,13 +101,13 @@ def save_checkpoint(mask_net, voxel_net, opt, epoch_idx, batch_idx, cfg, config_
 
   state_voxel_net = {'epoch': epoch_idx,
                      'batch': batch_idx,
-                     'net': 'voxel_net',
+                     'net': voxel_net_params['name'],
                      'state_dict': voxel_net.state_dict(),
-                     'in_channels': voxel_net.in_channels,
-                     'in_coarse_channels': voxel_net.in_coarse_channels,
-                     'in_fine_channels': voxel_net.in_fine_channels,
-                     'out_channels': voxel_net.out_channels,
-                     'num_fc': voxel_net.num_fc
+                     'in_channels': voxel_net_params['in_channels'],
+                     'in_coarse_channels': voxel_net_params['in_coarse_channels'],
+                     'in_fine_channels': voxel_net_params['in_fine_channels'],
+                     'out_channels': voxel_net_params['out_channels'],
+                     'num_fc': voxel_net_params['num_fc']
                     }
 
   # save python check point
