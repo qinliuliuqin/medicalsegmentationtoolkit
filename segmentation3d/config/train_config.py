@@ -16,7 +16,7 @@ __C.general = {}
 __C.general.imseg_list = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/train.txt'
 
 # the output of training models and logs
-__C.general.save_dir = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0220_2020/model1'
+__C.general.save_dir = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0224_2020/model2'
 
 # continue training from certain epoch, -1 to train from scratch
 __C.general.resume_epoch = -1
@@ -38,7 +38,7 @@ __C.dataset = {}
 __C.dataset.num_classes = 3
 
 # the resolution on which segmentation is performed
-__C.dataset.spacing = [0.8, 0.8, 0.8]
+__C.dataset.spacing = [0.4, 0.4, 0.4]
 
 # the sampling crop size, e.g., determine the context information
 __C.dataset.crop_size = [128, 128, 128]
@@ -111,7 +111,7 @@ __C.voxel_head.loss_focal_gamma = 2
 __C.voxel_head.loss_obj_weight = [1/3, 1/3, 1/3]
 
 # loss weight
-__C.voxel_head.loss_weight = 0.0
+__C.voxel_head.loss_weight = 0.5
 
 ##################################
 # net
