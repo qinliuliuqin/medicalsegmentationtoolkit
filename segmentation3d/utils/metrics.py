@@ -2,11 +2,11 @@ import numpy as np
 import SimpleITK as sitk
 
 
-def cal_dsc(ground_truth, segmentation, label, threshold):
+def cal_dsc(gt_npy, seg_npy, label, threshold):
   """ Calculate dice ratio
 
-  :param ground_truth: the input ground truth.
-  :param segmentation: the input segmentation result.
+  :param gt_npy: the input ground truth.
+  :param seg_npy: the input segmentation result.
   :param label: the label for dsc calculation.
   :param threshold: the segmentation threshold, only the number of voxels greater
                     than the threshold will be regarded as valid segmentation.
@@ -14,11 +14,11 @@ def cal_dsc(ground_truth, segmentation, label, threshold):
     dsc: the dice similarity coefficient or dice ratio.
     seg_type: the segmentation type.
   """
-  assert isinstance(ground_truth, sitk.Image)
-  assert isinstance(segmentation, sitk.Image)
-
-  gt_npy = sitk.GetArrayFromImage(ground_truth)
-  seg_npy = sitk.GetArrayFromImage(segmentation)
+  if isinstance(gt_npy, sitk.Image):
+    gt_npy = sitk.GetArrayFromImage(gt_npy)
+  
+  if isinstance(seg_npy, sitk.Image):
+    seg_npy = sitk.GetArrayFromImage(seg_npy)
 
   gt_npy, seg_npy = (gt_npy == label), (seg_npy == label)
   area_gt, area_seg = np.sum(gt_npy), np.sum(seg_npy)
