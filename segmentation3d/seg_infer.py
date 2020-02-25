@@ -380,7 +380,7 @@ def main():
 
     default_input = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/test.txt'
     default_model = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0220_2020/model1'
-    default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/model_0220_2020/model1'
+    default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/model_0220_2020/model1/epoch_1400_no_voxelhead'
     default_seg_name = 'seg.mha'
     default_gpu_id = 4
 
