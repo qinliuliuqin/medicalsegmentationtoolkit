@@ -234,10 +234,8 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
     :param save_uncertainty:    Whether to save all uncertainty maps
     :return: None
     """
-    # load model
-    begin = time.time()
+    total_test_time = 0
     model = load_seg_model(model_folder, gpu_id)
-    load_model_time = time.time() - begin
 
     # load test images
     if os.path.isfile(input_path):
@@ -260,6 +258,7 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
       raise ValueError('Unsupported input path.')
 
     # test each case
+    num_success_case = 0
     for i, file_path in enumerate(file_path_list):
       print('{}: {}'.format(i, file_path))
 
@@ -268,8 +267,8 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
       image = sitk.ReadImage(file_path, sitk.sitkFloat32)
       read_image_time = time.time() - begin
 
-      iso_image = resample_spacing(image, model['spacing'], model['max_stride'], model['interpolation'])
-
+      iso_image = resample_spacing(
+        image, model['spacing'], model['max_stride'], model['interpolation'])
       num_classes = model['out_channels']
       iso_mean_probs, iso_std_maps = [], []
       for idx in range(num_classes):
@@ -309,7 +308,8 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
         )
         for idy in range(num_classes):
           iso_mean_probs[idy] = copy_image(voi_mean_probs[idy], start_voxel, end_voxel, iso_mean_probs[idy])
-          iso_std_maps[idy] = copy_image(voi_std_maps[idy], start_voxel, end_voxel, iso_std_maps[idy])
+          if save_uncertainty:
+            iso_std_maps[idy] = copy_image(voi_std_maps[idy], start_voxel, end_voxel, iso_std_maps[idy])
 
         iso_partition_overlap_count = add_image_value(iso_partition_overlap_count, start_voxel, end_voxel, 1.0)
         print('{:0.2f}%'.format((idx + 1) / len(start_voxels) * 100))
@@ -317,20 +317,22 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
       iso_partition_overlap_count = sitk.Cast(1.0 / iso_partition_overlap_count, sitk.sitkFloat32)
       for idx in range(num_classes):
         iso_mean_probs[idx] = iso_mean_probs[idx] * iso_partition_overlap_count
-        iso_std_maps[idx] = iso_std_maps[idx][:] * iso_partition_overlap_count[:]
+        if save_uncertainty:
+          iso_std_maps[idx] = iso_std_maps[idx][:] * iso_partition_overlap_count[:]
 
       # resample to the original spacing
       mean_probs, std_maps = [], []
       for idx in range(num_classes):
         mean_probs.append(resample(iso_mean_probs[idx], image, 'LINEAR'))
-        std_maps.append(resample(iso_std_maps[idx], image, 'LINEAR'))
+        if save_uncertainty:
+          std_maps.append(resample(iso_std_maps[idx], image, 'LINEAR'))
 
       # get segmentation mask from the mean_probability maps
       mean_probs_tensor = convert_image_to_tensor(mean_probs)
       _, mask = mean_probs_tensor.max(0)
       mask = convert_tensor_to_image(mask, dtype=np.int8)
       mask.CopyInformation(image)
-      test_time = time.time() - begin
+      inference_time = time.time() - begin
 
       begin = time.time()
       case_name = file_name_list[i]
@@ -364,10 +366,13 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
         for idx in range(num_classes):
           std_map_save_path = os.path.join(output_folder, case_name, 'std_map_{}.mha'.format(idx))
           sitk.WriteImage(std_maps[idx], std_map_save_path, True)
-      save_time = time.time() - begin
+      save_image_time = time.time() - begin
 
-      total_test_time = load_model_time + read_image_time + test_time + post_processing_time + save_time
-      print('total test time: {:.2f}'.format(total_test_time))
+      test_time = read_image_time + inference_time + post_processing_time + save_image_time
+      total_test_time += inference_time
+      num_success_case += 1
+      print('read: {:.2f}, infer: {:.2f}, write: {:.2f}, total: {:.2f}, average: {:.2f}'.format(
+        read_image_time, inference_time, save_image_time, test_time, total_test_time / num_success_case))
 
 
 def main():
@@ -379,8 +384,8 @@ def main():
                        '3. A folder containing all testing images\n'
 
     default_input = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/test.txt'
-    default_model = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0220_2020/model1'
-    default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/model_0220_2020/model1/epoch_1400_no_voxelhead'
+    default_model = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0220_2020/model2'
+    default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/model_0220_2020/model2/epoch_1400'
     default_seg_name = 'seg.mha'
     default_gpu_id = 4
 
