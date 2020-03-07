@@ -16,13 +16,15 @@ __C.general = {}
 __C.general.imseg_list = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/train.txt'
 
 # the output of training models and logs
-__C.general.save_dir = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0305_2020/model1_groupnorm_0.4_contrast'
+
+__C.general.save_dir = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0224_2020/model2'
 
 # continue training from certain epoch, -1 to train from scratch
 __C.general.resume_epoch = 900
 
 # the number of GPUs used in training. Set to 0 if using cpu only.
-__C.general.num_gpus = 3
+
+__C.general.num_gpus = 1
 
 # random seed used in training (debugging purpose)
 __C.general.seed = 0
@@ -82,6 +84,36 @@ __C.loss.obj_weight = [1/3, 1/3, 1/3]
 # the gamma parameter in focal loss
 __C.loss.focal_gamma = 2
 
+##################################
+# voxel head parameters
+##################################
+
+__C.voxel_head = {}
+
+# the number voxels for voxel head network
+__C.voxel_head.num_voxels = 32768 
+
+# oversample ratio
+__C.voxel_head.oversample_ratio = 3
+
+# importance sample ratio
+__C.voxel_head.importance_sample_ratio = 0.75
+
+# number of fully-connected layers
+__C.voxel_head.num_fc = 3
+
+# voxel head loss name
+__C.voxel_head.loss_name = 'Focal'
+
+# the gamma parameter in focal loss
+# only valid for Focal loss
+__C.voxel_head.loss_focal_gamma = 2
+
+# the weight for each class including background class weights will be normalized
+__C.voxel_head.loss_obj_weight = [1/3, 1/3, 1/3]
+
+# loss weight
+__C.voxel_head.loss_weight = 0.5
 
 ##################################
 # net
@@ -90,7 +122,8 @@ __C.loss.focal_gamma = 2
 __C.net = {}
 
 # the network name
-__C.net.name = 'vbnet'
+__C.net.name = 'vbnet_rend'
+>>>>>>> qinliu
 
 # enable uncertainty by trun on drop out layers in the segmentation net
 __C.net.dropout_turn_on = False
@@ -102,13 +135,13 @@ __C.net.dropout_turn_on = False
 __C.train = {}
 
 # the number of training epochs
-__C.train.epochs = 1101
+__C.train.epochs = 2001
 
 # the number of samples in a batch
-__C.train.batchsize = 6
+__C.train.batchsize = 4
 
 # the number of threads for IO
-__C.train.num_threads = 6
+__C.train.num_threads = 4
 
 # the learning rate
 __C.train.lr = 1e-4

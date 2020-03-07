@@ -36,5 +36,11 @@ __C.general.partition_size = [51.2, 51.2, 51.2]
 # different partition window.
 __C.general.partition_stride = [51.2, 51.2, 51.2]
 
+# enable voxel net
+__C.general.turn_on_voxel_net = True
+
+# number of voxels for voxel net
+__C.general.num_voxels_for_voxel_net = 10240
+
 # number of iteration in bayesian segmentation, set it as 1 for non-bayesian segmentation model
 __C.general.bayesian_iteration = 1

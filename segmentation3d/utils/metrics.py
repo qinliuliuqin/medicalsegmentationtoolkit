@@ -18,7 +18,7 @@ def cal_dsc(gt_npy, seg_npy, label, threshold):
   
   if isinstance(seg_npy, sitk.Image):
     seg_npy = sitk.GetArrayFromImage(seg_npy)
-  
+
   gt_npy, seg_npy = (gt_npy == label), (seg_npy == label)
   area_gt, area_seg = np.sum(gt_npy), np.sum(seg_npy)
   

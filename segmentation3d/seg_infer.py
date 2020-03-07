@@ -15,6 +15,8 @@ from segmentation3d.dataloader.image_tools import resample, convert_image_to_ten
   copy_image, image_partition_by_fixed_size, resample_spacing, add_image_value, pick_largest_connected_component, \
   remove_small_connected_component
 from segmentation3d.utils.normalizer import FixedNormalizer, AdaptiveNormalizer
+from segmentation3d.utils.voxel_rend_helper import get_uncertain_voxel_coords_on_grid, calculate_uncertainty, \
+  voxel_sample_features, voxel_sample
 
 
 def read_test_txt(txt_file):
@@ -82,6 +84,7 @@ def load_seg_model(model_folder, gpu_id=0):
 
   # load model state
   chk_file = os.path.join(latest_checkpoint_dir, 'params.pth')
+  voxel_net_chk_file = os.path.join(latest_checkpoint_dir, 'voxel_head_params.pth')
 
   if gpu_id >= 0:
     os.environ['CUDA_VISIBLE_DEVICES'] = '{}'.format(int(gpu_id))
@@ -93,6 +96,18 @@ def load_seg_model(model_folder, gpu_id=0):
     net.load_state_dict(state['state_dict'])
     net.eval()
     net = net.cuda()
+
+    # load voxel head network module
+    voxel_net_state = torch.load(voxel_net_chk_file)
+    voxel_net = net_module.VoxelHead(
+      voxel_net_state['in_fine_channels'], voxel_net_state['in_coarse_channels'], voxel_net_state['out_channels'],
+      voxel_net_state['num_fc']
+    )
+    voxel_net = nn.parallel.DataParallel(voxel_net)
+    voxel_net.load_state_dict(voxel_net_state['state_dict'])
+    voxel_net.eval()
+    voxel_net = voxel_net.cuda()
+
     del os.environ['CUDA_VISIBLE_DEVICES']
 
   else:
@@ -102,9 +117,20 @@ def load_seg_model(model_folder, gpu_id=0):
     net.load_state_dict(state['state_dict'])
     net.eval()
 
+    voxel_net_state = torch.load(voxel_net_chk_file, map_location='cpu')
+    voxel_net = net_module.VoxelHead(
+      voxel_net_state['in_fine_channels'], voxel_net_state['in_coarse_channels'], voxel_net_state['out_channels'],
+      voxel_net_state['num_fc']
+    )
+    # voxel_net = nn.parallel.DataParallel(voxel_net)
+    voxel_net.load_state_dict(voxel_net_state['state_dict'])
+    voxel_net.eval()
+
   model.net = net
   model.spacing, model.max_stride, model.interpolation = state['spacing'], state['max_stride'], state['interpolation']
   model.in_channels, model.out_channels = state['in_channels'], state['out_channels']
+
+  model.voxel_net = voxel_net
 
   model.crop_normalizers = []
   for crop_normalizer in state['crop_normalizers']:
@@ -122,12 +148,13 @@ def load_seg_model(model_folder, gpu_id=0):
   return model
 
 
-def segmentation_voi(model, iso_image, start_voxel, end_voxel, use_gpu):
+def segmentation_voi(model, iso_image, start_voxel, end_voxel, num_voxels, use_gpu):
   """ Segment the volume of interest
   :param model:           the loaded segmentation model.
   :param iso_image:       the image volume that has the same spacing with the model's resampling spacing.
   :param start_voxel:     the start voxel of the volume of interest (inclusive).
   :param end_voxel:       the end voxel of the volume of interest (exclusive).
+  :param num_voxels:      the number of voxels for voxel net.
   :param use_gpu:         whether to use gpu or not, bool type.
   :return:
     mean_prob_maps:        the mean probability maps of all classes
@@ -146,11 +173,35 @@ def segmentation_voi(model, iso_image, start_voxel, end_voxel, use_gpu):
 
   bayesian_iteration = model['infer_cfg'].general.bayesian_iteration
   with torch.no_grad():
-    probs = model['net'](roi_image_tensor)
-    probs = torch.unsqueeze(probs, 0)
+    mask_coarse_probs, mask_fine_features = model['net'](roi_image_tensor)
+    # up-sample the coarse predictions
+    up_sampler = nn.Upsample(scale_factor=2, mode='trilinear', align_corners=False)
+    mask_fine_probs = up_sampler(mask_coarse_probs)
+
+    # sample points according to the fine predictions
+    if num_voxels > 0:
+      uncertainty_map = calculate_uncertainty(mask_fine_probs)
+      voxel_indices, voxel_coords = get_uncertain_voxel_coords_on_grid(uncertainty_map, num_voxels)
+
+      voxel_fine_features = voxel_sample_features(mask_fine_features, voxel_coords)
+      voxel_coarse_features = voxel_sample(mask_fine_probs, voxel_coords)
+      assert voxel_fine_features.dim() == voxel_coarse_features.dim()
+
+      voxel_net = model['voxel_net']
+      voxel_probs = voxel_net(voxel_fine_features, voxel_coarse_features)
+
+      R, C, D, H, W = mask_fine_probs.shape
+      voxel_indices = voxel_indices.unsqueeze(1).expand(-1, C, -1)
+      mask_fine_probs = (
+        mask_fine_probs.reshape(R, C, D * H * W)
+          .scatter_(2, voxel_indices, voxel_probs)
+          .view(R, C, D, H, W)
+      )
+
+    mask_fine_probs = torch.unsqueeze(mask_fine_probs, 0)
     for i in range(bayesian_iteration - 1):
-      probs = torch.cat((probs, torch.unsqueeze(model['net'](roi_image_tensor), 0)), 0)
-    mean_probs, stddev_maps = torch.mean(probs, 0), torch.std(probs, 0)
+      mask_fine_probs = torch.cat((mask_fine_probs, torch.unsqueeze(model['net'](roi_image_tensor), 0)), 0)
+    mean_probs, stddev_maps = torch.mean(mask_fine_probs, 0), torch.std(mask_fine_probs, 0)
 
   num_classes = model['out_channels']
   assert num_classes == mean_probs.shape[1]
@@ -180,11 +231,8 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
     :param save_uncertainty:    Whether to save all uncertainty maps
     :return: None
     """
-
-    # load model
-    begin = time.time()
+    total_test_time = 0
     model = load_seg_model(model_folder, gpu_id)
-    load_model_time = time.time() - begin
 
     # load test images
     if os.path.isfile(input_path):
@@ -217,8 +265,8 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
       image = sitk.ReadImage(file_path, sitk.sitkFloat32)
       read_image_time = time.time() - begin
 
-      iso_image = resample_spacing(image, model['spacing'], model['max_stride'], model['interpolation'])
-
+      iso_image = resample_spacing(
+        image, model['spacing'], model['max_stride'], model['interpolation'])
       num_classes = model['out_channels']
       iso_mean_probs, iso_std_maps = [], []
       for idx in range(num_classes):
@@ -248,10 +296,14 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
       begin = time.time()
       iso_partition_overlap_count = sitk.Image(iso_image.GetSize(), sitk.sitkFloat32)
       iso_partition_overlap_count.CopyInformation(iso_image)
+      num_voxels = \
+        model['infer_cfg'].general.num_voxels_for_voxel_net if model['infer_cfg'].general.turn_on_voxel_net else 0
       for idx in range(len(start_voxels)):
         start_voxel, end_voxel = start_voxels[idx], end_voxels[idx]
 
-        voi_mean_probs, voi_std_maps = segmentation_voi(model, iso_image, start_voxel, end_voxel, gpu_id > 0)
+        voi_mean_probs, voi_std_maps = segmentation_voi(
+          model, iso_image, start_voxel, end_voxel, num_voxels, gpu_id > 0
+        )
         for idy in range(num_classes):
           iso_mean_probs[idy] = copy_image(voi_mean_probs[idy], start_voxel, end_voxel, iso_mean_probs[idy])
           if save_uncertainty:
@@ -312,7 +364,7 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
         for idx in range(num_classes):
           std_map_save_path = os.path.join(output_folder, case_name, 'std_map_{}.mha'.format(idx))
           sitk.WriteImage(std_maps[idx], std_map_save_path, True)
-      save_time = time.time() - begin
+      save_image_time = time.time() - begin
 
       total_test_time = load_model_time + read_image_time + inference_time + post_processing_time + save_time
       total_inference_time += inference_time
@@ -330,10 +382,10 @@ def main():
                        '3. A folder containing all testing images\n'
 
     default_input = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/test.txt'
-    default_model = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0305_2020/model1_groupnorm_0.4_contrast'
-    default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/model_0305_2020/model1_groupnorm_0.4_contrast'
+    default_model = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0220_2020/model2'
+    default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/model_0220_2020/model2/epoch_1400'
     default_seg_name = 'seg.mha'
-    default_gpu_id =7
+    default_gpu_id = 4
 
     parser = argparse.ArgumentParser(description=long_description)
     parser.add_argument('-i', '--input', default=default_input, help='input folder/file for intensity images')
