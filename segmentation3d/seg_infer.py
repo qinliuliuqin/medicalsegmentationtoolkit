@@ -1,11 +1,11 @@
 import argparse
 import glob
 import importlib
+import torch.nn as nn
 import os
 import SimpleITK as sitk
 import time
 import torch
-import torch.nn as nn
 import numpy as np
 from easydict import EasyDict as edict
 
@@ -76,11 +76,10 @@ def load_seg_model(model_folder, gpu_id=0):
   """
   assert os.path.isdir(model_folder), 'Model folder does not exist: {}'.format(model_folder)
 
-  model = edict()
-
   # load inference config file
   latest_checkpoint_dir = get_checkpoint_folder(os.path.join(model_folder, 'checkpoints'), -1)
   infer_cfg = load_config(os.path.join(latest_checkpoint_dir, 'infer_config.py'))
+  model = edict()
   model.infer_cfg = infer_cfg
 
   # load model state
@@ -89,12 +88,11 @@ def load_seg_model(model_folder, gpu_id=0):
 
   if gpu_id >= 0:
     os.environ['CUDA_VISIBLE_DEVICES'] = '{}'.format(int(gpu_id))
-
     # load network module
     state = torch.load(chk_file)
     net_module = importlib.import_module('segmentation3d.network.' + state['net'])
     net = net_module.SegmentationNet(state['in_channels'], state['out_channels'], state['dropout'])
-    net = nn.parallel.DataParallel(net)
+    net = nn.parallel.DataParallel(net, device_ids=[0])
     net.load_state_dict(state['state_dict'])
     net.eval()
     net = net.cuda()
@@ -116,7 +114,6 @@ def load_seg_model(model_folder, gpu_id=0):
     state = torch.load(chk_file, map_location='cpu')
     net_module = importlib.import_module('segmentation3d.network.' + state['net'])
     net = net_module.SegmentationNet(state['in_channels'], state['out_channels'], state['dropout'])
-    # net = nn.parallel.DataParallel(net)
     net.load_state_dict(state['state_dict'])
     net.eval()
 
@@ -142,8 +139,8 @@ def load_seg_model(model_folder, gpu_id=0):
       model.crop_normalizers.append(FixedNormalizer(mean, stddev, clip))
 
     elif crop_normalizer['type'] == 1:
-      min_p, max_p, clip = crop_normalizer['min_p'], crop_normalizer['max_p'], crop_normalizer['clip']
-      model.crop_normalizers.append(AdaptiveNormalizer(min_p, max_p, clip))
+      clip_sigma = crop_normalizer['clip_sigma']
+      model.crop_normalizers.append(AdaptiveNormalizer(clip_sigma))
 
     else:
       raise ValueError('Unsupported normalization type.')
@@ -259,6 +256,7 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
 
     # test each case
     num_success_case = 0
+    total_inference_time = 0
     for i, file_path in enumerate(file_path_list):
       print('{}: {}'.format(i, file_path))
 
@@ -368,11 +366,11 @@ def segmentation(input_path, model_folder, output_folder, seg_name, gpu_id, save
           sitk.WriteImage(std_maps[idx], std_map_save_path, True)
       save_image_time = time.time() - begin
 
-      test_time = read_image_time + inference_time + post_processing_time + save_image_time
-      total_test_time += inference_time
+      total_test_time = load_model_time + read_image_time + inference_time + post_processing_time + save_time
+      total_inference_time += inference_time
       num_success_case += 1
-      print('read: {:.2f}, infer: {:.2f}, write: {:.2f}, total: {:.2f}, average: {:.2f}'.format(
-        read_image_time, inference_time, save_image_time, test_time, total_test_time / num_success_case))
+      
+      print('total test time: {:.2f}, average inference time: {:.2f}'.format(total_test_time, total_inference_time / num_success_case))
 
 
 def main():

@@ -4,7 +4,6 @@ import SimpleITK as sitk
 
 def cal_dsc(gt_npy, seg_npy, label, threshold):
   """ Calculate dice ratio
-
   :param gt_npy: the input ground truth.
   :param seg_npy: the input segmentation result.
   :param label: the label for dsc calculation.
@@ -22,18 +21,18 @@ def cal_dsc(gt_npy, seg_npy, label, threshold):
 
   gt_npy, seg_npy = (gt_npy == label), (seg_npy == label)
   area_gt, area_seg = np.sum(gt_npy), np.sum(seg_npy)
-
+  
   if area_gt < threshold and area_seg < threshold:
     dsc, seg_type = 1.0, 'TN'
-
+  
   elif area_gt < threshold and area_seg >= threshold:
     dsc, seg_type = 0.0, 'FP'
-
+  
   elif area_gt >= threshold and area_seg < threshold:
     dsc, seg_type = 0.0, 'FN'
-
+  
   else:
     intersection = np.sum(gt_npy & seg_npy)
     dsc, seg_type = 2 * intersection / (area_gt + area_seg), 'TP'
-
+  
   return dsc, seg_type

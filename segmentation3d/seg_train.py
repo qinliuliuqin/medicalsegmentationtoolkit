@@ -94,7 +94,7 @@ def train(config_file):
 
     # load checkpoint if resume epoch > 0
     if cfg.general.resume_epoch >= 0:
-        last_save_epoch, batch_start = load_checkpoint(cfg.general.resume_epoch, net, opt, cfg.general.save_dir, -1)
+        last_save_epoch, batch_start = load_checkpoint(cfg.general.resume_epoch, net, opt, cfg.general.save_dir)
     else:
         last_save_epoch, batch_start = 0, 0
 

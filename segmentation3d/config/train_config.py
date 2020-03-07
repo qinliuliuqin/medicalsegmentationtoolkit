@@ -16,12 +16,14 @@ __C.general = {}
 __C.general.imseg_list = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/train.txt'
 
 # the output of training models and logs
+
 __C.general.save_dir = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0224_2020/model2'
 
 # continue training from certain epoch, -1 to train from scratch
-__C.general.resume_epoch = -1
+__C.general.resume_epoch = 900
 
 # the number of GPUs used in training. Set to 0 if using cpu only.
+
 __C.general.num_gpus = 1
 
 # random seed used in training (debugging purpose)
@@ -62,7 +64,7 @@ __C.dataset.interpolation = 'LINEAR'
 # one normalizer corresponds to one input modality
 # 1) FixedNormalizer: use fixed mean and standard deviation to normalize intensity
 # 2) AdaptiveNormalizer: use minimum and maximum intensity of crop to normalize intensity
-__C.dataset.crop_normalizers = [AdaptiveNormalizer(clip=False)]
+__C.dataset.crop_normalizers = [AdaptiveNormalizer()]
 
 ##################################
 # training loss
@@ -121,6 +123,7 @@ __C.net = {}
 
 # the network name
 __C.net.name = 'vbnet_rend'
+>>>>>>> qinliu
 
 # enable uncertainty by trun on drop out layers in the segmentation net
 __C.net.dropout_turn_on = False
