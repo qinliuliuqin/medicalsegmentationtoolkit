@@ -13,19 +13,19 @@ cfg = __C
 __C.general = {}
 
 # image-segmentation pair list
-__C.general.imseg_list = '/shenlab/lab_stor6/qinliu/CT_Pancreas/dataset/train.csv'
+__C.general.imseg_list = '/shenlab/lab_stor6/projects/CT_Dental/dataset/segmentation/bone/train_server.txt'
 
 # the output of training models and logs
-__C.general.save_dir = '/shenlab/lab_stor6/qinliu/CT_Pancreas/model/model_0908_2020'
+__C.general.save_dir = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0211_2021'
 
 # the model scale
-__C.general.model_scale = 'contrast'
+__C.general.model_scale = 'fine'
 
 # continue training from certain epoch, -1 to train from scratch
-__C.general.resume_epoch = -1
+__C.general.resume_epoch = 3000
 
 # the number of GPUs used in training. Set to 0 if using cpu only.
-__C.general.num_gpus = 1
+__C.general.num_gpus = 6
 
 # random seed used in training (debugging purpose)
 __C.general.seed = 0
@@ -38,20 +38,20 @@ __C.general.seed = 0
 __C.dataset = {}
 
 # the number of classes
-__C.dataset.num_classes = 2
+__C.dataset.num_classes = 3
 
 # the resolution on which segmentation is performed
-__C.dataset.spacing = [0.8, 0.8, 0.8]
+__C.dataset.spacing = [0.15, 0.15, 0.15]
 
 # the sampling crop size, e.g., determine the context information
-__C.dataset.crop_size = [64, 64, 64]
+__C.dataset.crop_size = [128, 128, 128]
 
 # sampling method:
 # 1) GLOBAL: sampling crops randomly in the entire image domain
 # 2) MASK: sampling crops randomly within segmentation mask
 # 3) HYBRID: Sampling crops randomly with both GLOBAL and MASK methods
 # 4) CENTER: sampling crops in the image center
-__C.dataset.sampling_method = 'HYBRID'
+__C.dataset.sampling_method = 'GLOBAL'
 
 # linear interpolation method:
 # 1) NN: nearest neighbor interpolation
@@ -69,11 +69,11 @@ __C.dataset.crop_normalizers = [AdaptiveNormalizer()]
 ##################################
 
 # translation augmentation (unit: mm)
-__C.dataset.random_translation = [15, 15, 15]
+__C.dataset.random_translation = [6, 6, 6]
 
 # spacing scale augmentation, spacing scale will be randomly selected from [min, max]
 # during training, the image spacing will be spacing * scale
-__C.dataset.random_scale = [0.9, 1.1]
+__C.dataset.random_scale = [1.0, 1.0]
 
 
 ##################################
@@ -90,7 +90,7 @@ __C.loss.name = 'Focal'
 
 # the weight for each class including background class
 # weights will be normalized
-__C.loss.obj_weight = [1/2, 1/2]
+__C.loss.obj_weight = [1/3, 1/3, 1/3]
 
 # the gamma parameter in focal loss
 __C.loss.focal_gamma = 2
@@ -112,22 +112,22 @@ __C.net.name = 'vbnet'
 __C.train = {}
 
 # the number of training epochs
-__C.train.epochs = 1001
+__C.train.epochs = 3001
 
 # the number of samples in a batch
-__C.train.batchsize = 4
+__C.train.batchsize = 12
 
 # the number of threads for IO
-__C.train.num_threads = 4
+__C.train.num_threads = 18
 
 # the learning rate
-__C.train.lr = 1e-4
+__C.train.lr = 1e-5
 
 # the beta in Adam optimizer
 __C.train.betas = (0.9, 0.999)
 
 # the number of batches to save model
-__C.train.save_epochs = 100
+__C.train.save_epochs = 500
 
 
 ###################################

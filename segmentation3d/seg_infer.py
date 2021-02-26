@@ -11,7 +11,8 @@ def main():
                        '2. A text file containing paths of all testing images\n'\
                        '3. A folder containing all testing images\n'
 
-    default_input = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/segmentation/test.txt'
+    default_input = '/home/qinliu19/projects/Model-Zoo/Dental/test_data/case_67_org.mha'
+    #default_input = '/shenlab/lab_stor6/projects/CT_Dental/dataset/segmentation/bone/test_server.txt'
     #default_input = '/shenlab/lab_stor6/projects/CT_Dental/data/case_67_cbct_patient/org.mha'
     #default_input = '/shenlab/lab_stor6/projects/CT_Dental/ThreeLabels/datasets/test.txt'
     #default_input = '/shenlab/lab_stor6/deqiang/Pre_Post_Facial_Data-Ma/original_images'
@@ -24,6 +25,7 @@ def main():
     #default_input = '/shenlab/lab_stor6/projects/CT_Dental/test_data/Pre_Post_Facial_Data/22_pairs_09212020'
     default_model = '/home/qinliu19/projects/Model-Zoo/Dental/segmentation/model_0429_2020' # bones segmentation
     #default_model = '/home/qinliu19/projects/Model-Zoo/Dental/segmentation/model_0609_2020' # bones+soft-tissue segmentation
+    #default_model = '/shenlab/lab_stor6/qinliu/CT_Dental/models/model_0208_2021'
     #default_model = '/home/qinliu19/projects/Model-Zoo/Dental/segmentation/model_0803_2020'
     #default_model = '/shenlab/lab_stor6/qinliu/CT_Pancreas/model/model_0908_2020/'
     #default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/Pre_Post_Facial_Data-Ma_3labels'
@@ -33,9 +35,10 @@ def main():
     #default_output = '/shenlab/lab_stor6/qinliu/CT_Pancreas/results/model_0908_2020/'
     #default_output = '/shenlab/lab_stor6/projects/CT_Dental/results/CB_no_teeth_label_10072020/teeth'
     #default_output = '/shenlab/lab_stor6/projects/CT_Dental/results/22_pairs_09212020/seg_bones_plus_softtissue'
-    default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/seg_benchmark4'
+    #default_output = '/shenlab/lab_stor6/qinliu/CT_Dental/results/model_0208_2021'
+    default_output = '/home/qinliu19/projects/Model-Zoo/Dental/test_results'
     default_seg_name = 'seg.mha'
-    default_gpu_id =7
+    default_gpu_id =0
 
     parser = argparse.ArgumentParser(description=long_description)
     parser.add_argument('-i', '--input', default=default_input, help='input folder/file for intensity images')
@@ -48,7 +51,7 @@ def main():
 
     args = parser.parse_args()
     segmentation(
-        args.input, args.model, args.output, args.seg_name, args.gpu_id, False, True, args.save_image, args.save_prob
+        args.input, args.model, args.output, args.seg_name, args.gpu_id, False, True, args.save_image, True
     )
 
 
