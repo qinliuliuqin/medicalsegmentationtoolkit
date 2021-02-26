@@ -2,10 +2,10 @@ import os
 import pandas as pd
 import SimpleITK as sitk
 
-from segmentation3d.utils.metrics import cal_dsc
+from segmentation3d.utils.metrics import cal_dsc, cal_ppv, cal_sen
 
 
-def cal_dsc_batch(gt_files, seg_files, labels, threshold, save_csv_file_path):
+def cal_metric_batch(gt_files, seg_files, labels, threshold, metric_name, save_csv_file_path):
     """ Batch test for calculating dice ratio
     gt_files: a list containing all ground truth files.
     seg_files: a list containing all segmentation files.
@@ -32,11 +32,17 @@ def cal_dsc_batch(gt_files, seg_files, labels, threshold, save_csv_file_path):
         case_name = os.path.basename(gt_case_path)
         content = [case_name]
         for label in labels:
-            score, type = cal_dsc(gt_npy, seg_npy, label, threshold)
-            content.extend([score, type])
-            print('case_name: {}, label: {}, score: {}, type: {}'.format(
-                case_name, label, score, type))
+            if metric_name == 'dsc':
+                score, type = cal_dsc(gt_npy, seg_npy, label, threshold)
+                content.extend([score, type])
+            elif metric_name == 'sen':
+                score, type = cal_sen(gt_npy, seg_npy, label, threshold)
+                content.extend([score, type])
+            else:
+                score, type = cal_ppv(gt_npy, seg_npy, label, threshold)
+                content.extend([score, type])
 
+            print('case_name: {}, label: {}, score: {}, type: {}'.format case_name, label, score, type))                
         result_content.append(content)
 
     column = ['filename']
