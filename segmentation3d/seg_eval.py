@@ -4,7 +4,7 @@ from segmentation3d.core.seg_eval import cal_metric_batch
 from segmentation3d.core.seg_infer import read_test_txt, read_test_csv
 
 
-def test_metric_dsc_batch():
+def test_cal_metric_batch():
   test_file = '/shenlab/lab_stor6/qinliu/CT_Dental/datasets/segmentation/test.txt'
   gt_folder = '/shenlab/lab_stor6/projects/CT_Dental/data'
   gt_name = 'seg.mha'
