@@ -1,6 +1,6 @@
 import os
 
-from segmentation3d.core.seg_eval import cal_dsc_batch
+from segmentation3d.core.seg_eval import cal_metric_batch
 from segmentation3d.core.seg_infer import read_test_txt, read_test_csv
 
 
@@ -31,7 +31,7 @@ def test_cal_dsc_batch():
     seg_files.append(os.path.join(seg_folder, '{}.nii.gz'.format(case_name)))
 
   labels = [1,2]
-  cal_dsc_batch(gt_files, seg_files, labels, 10, result_file)
+  cal_dsc_batch(gt_files, seg_files, labels, 10, 'dsc', result_file)
 
 
 if __name__ == '__main__':
