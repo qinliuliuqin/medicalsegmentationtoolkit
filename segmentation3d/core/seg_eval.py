@@ -42,7 +42,7 @@ def cal_metric_batch(gt_files, seg_files, labels, threshold, metric_name, save_c
                 score, type = cal_ppv(gt_npy, seg_npy, label, threshold)
                 content.extend([score, type])
 
-            print('case_name: {}, label: {}, score: {}, type: {}'.format case_name, label, score, type))                
+            print('case_name: {}, label: {}, score: {}, type: {}'.format(case_name, label, score, type))                
         result_content.append(content)
 
     column = ['filename']
